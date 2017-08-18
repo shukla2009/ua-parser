@@ -21,8 +21,8 @@ function dispQuery(query, params) {
     });
 }
 
-exports.findUser = function (video,callback) {
-    var queryParam =[video];
+exports.findUser = function (video, callback) {
+    var queryParam = [video];
     var query = 'SELECT uid from vid_to_uid WHERE vid =? ';
     client.execute(query, queryParam, {prepare: true}, function (err, result) {
         if (err) {
@@ -30,6 +30,10 @@ exports.findUser = function (video,callback) {
             return callback(err);
         } else {
             logger.debug(util.format('result found for query %s ', dispQuery(query, queryParam)));
+            if (!result || result.rows.length === 0) {
+                logger.error(util.format('No result for Query %s', dispQuery(query, queryParam)));
+                return callback('Not Found');
+            }
             callback(null, Number(result.rows[0].uid.toString()));
         }
     });
