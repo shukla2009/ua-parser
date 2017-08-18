@@ -1,4 +1,5 @@
 .idea/
 node_modules/
-config/dev.js
+config/development.js
 dockerrun.sh
+repl

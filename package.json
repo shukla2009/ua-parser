@@ -22,7 +22,9 @@
   },
   "homepage": "https://github.com/shukla2009/sqs-kinesis-connector#readme",
   "dependencies": {
+    "cassandra-driver": "^3.2.2",
     "express": "^4.15.3",
+    "lodash": "^4.17.4",
     "ua-parser-js": "^0.7.14",
     "winston": "^2.3.1"
   }
