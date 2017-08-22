@@ -8,6 +8,7 @@ let logger = require('../logger')(module);
 const cassandra = require('cassandra-driver');
 let _ = require('lodash');
 let util = require('util');
+const https = require('https');
 let cp = _.map(config.cassandra.hosts.split(','), function (c) {
     return c.trim();
 });
@@ -21,7 +22,7 @@ function dispQuery(query, params) {
     });
 }
 
-exports.findUser = function (video, callback) {
+function findUserFromCassandra(video, callback) {
     var queryParam = [video];
     var query = 'SELECT uid from vid_to_uid WHERE vid =? ';
     client.execute(query, queryParam, {prepare: true}, function (err, result) {
@@ -29,17 +30,77 @@ exports.findUser = function (video, callback) {
             logger.error(util.format('Query %s failed with error', dispQuery(query, queryParam)));
             return callback(err);
         } else {
-            logger.debug(util.format('result found for query %s ', dispQuery(query, queryParam)));
             if (!result || result.rows.length === 0) {
                 logger.error(util.format('No result for Query %s', dispQuery(query, queryParam)));
                 return callback('Not Found');
             }
+            logger.debug(util.format('result found for query %s ', dispQuery(query, queryParam)));
             callback(null, Number(result.rows[0].uid.toString()));
         }
     });
+}
+
+
+function findUserFromWtstaging(video, cb) {
+    let options = {
+        host: 'wtstaging.wootag.com',
+        port: 443,
+        path: `/api/v1/getvideodetails/${video}`,
+        method: 'GET',
+    };
+
+    let request = https.request(options, function (res) {
+        let message = '';
+        res.on('data', function (chunk) {
+            message += chunk;
+        });
+        res.on('end', function () {
+            if (res.statusCode !== 200) {
+                return cb('Not Found');
+            }
+            message = JSON.parse(message);
+            if (!message || !message.uid) {
+                return cb('Authentication Failed');
+            }
+            cb(null, Number(message.uid));
+        });
+    });
+    request.end();
+}
+
+function findUserFromWingApi(video, cb) {
+    let options = {
+        host: 'wootag.com',
+        port: 443,
+        path: `/mobile.php/wings/getJsonViz/${video}`,
+        method: 'GET',
+    };
+
+    let request = https.request(options, function (res) {
+        let message = '';
+        res.on('data', function (chunk) {
+            message += chunk;
+        });
+        res.on('end', function () {
+            if (res.statusCode !== 200) {
+                return cb('Not Found');
+            }
+            message = JSON.parse(message);
+            if (!message || !message.user_id) {
+                return cb('Not Found');
+            }
+            cb(null, Number(message.user_id));
+        });
+    });
+    request.end();
+}
+
+exports.findUser = function (video, cb) {
+    findUserFromCassandra(video, function (err, result) {
+        if (err) {
+            findUserFromWingApi(video, cb);
+        } else {
+            cb(null, result);
+        }
+    });
 };
-
-
-
-
-
