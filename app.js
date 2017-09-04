@@ -27,6 +27,18 @@ app.get('/users/:video', function (req, res) {
     });
 });
 
+app.get('/engagements/:videoId/:engagementId', function (req, res) {
+    logger.info(`finding engagement type for video: ${req.params.videoId} and engagement: ${req.params.engagementId}`);
+    db.findEngagementType(req.params.videoId, req.params.engagementId, function (err, result) {
+        if (err) {
+            res.status(404).send('Not Found');
+        }
+        else {
+            res.send(`${result}`);
+        }
+    });
+});
+
 app.all('/*', function (req, res) {
     res.status(404).send('Not Found');
 });

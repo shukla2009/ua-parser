@@ -68,7 +68,7 @@ function findUserFromWtstaging(video, cb) {
     request.end();
 }
 
-function findUserFromWingApi(video, cb) {
+function findInfoFromWingApi(video, cb) {
     let options = {
         host: 'wootag.com',
         port: 443,
@@ -86,19 +86,51 @@ function findUserFromWingApi(video, cb) {
                 return cb('Not Found');
             }
             message = JSON.parse(message);
-            if (!message || !message.user_id) {
+            if (!message) {
                 return cb('Not Found');
             }
-            cb(null, Number(message.user_id));
+            cb(null, message);
         });
     });
     request.end();
 }
 
+exports.findEngagementType = function (videoId, engagementId, cb) {
+
+    findInfoFromWingApi(videoId, function (err, result) {
+        if (err) {
+            cb('NotFound');
+        }
+        else {
+            let engagements = [];
+            _.forEach(result.tags, (t) => {
+                _.forEach(t.engagement, (e) => {
+                    if (e.id === engagementId) {
+                        return engagements.push(e);
+                    }
+                });
+            });
+            if (engagements.length === 0) {
+                cb('Not Found');
+            } else {
+                cb(null, engagements[0].type);
+            }
+
+        }
+    });
+};
+
 exports.findUser = function (video, cb) {
     findUserFromCassandra(video, function (err, result) {
         if (err) {
-            findUserFromWingApi(video, cb);
+            findInfoFromWingApi(video, function (error, info) {
+                if (error) {
+                    cb('NotFound');
+                }
+                else {
+                    cb(null, info.user_id);
+                }
+            });
         } else {
             cb(null, result);
         }
