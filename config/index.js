@@ -6,7 +6,7 @@ var all = {
     log: {
         level: process.env.LOG_LEVEL || 'info'
     },
-    port : process.env.PORT || 8085
+    port : process.env.PORT || 8080
 };
 
 // Export the config object based on the NODE_ENV
